@@ -1,19 +1,19 @@
-import './scss/styles.scss';
+// import './scss/styles.scss';
 
 // Тип уникального Id карточки
-type cardId = string;
+export type cardId = string;
 
 // тип котегории для раскраски
-enum categoryType {
-	category1 = 'софт-скил',
-	category2 = 'другое',
-	category3 = 'дополнительное',
-	category4 = 'кнопка',
-	category5 = 'хард-скилл',
+export enum categoryType {
+	soft = 'софт-скил' as any,
+	other = 'другое' as any,
+	additional = 'дополнительное' as any,
+	button = 'кнопка' as any,
+	hard = 'хард-скилл' as any,
 }
 
 /// Интерйейс для товара
-interface IProductItem {
+export interface IProductItem {
 	id: cardId;
 	description: string;
 	image: string;
@@ -23,7 +23,7 @@ interface IProductItem {
 }
 
 // Продуктовая модель
-interface IProductModel {
+export interface IProductModel {
 	// Товары с сервиса
 	items: IProductItem[];
 	// Установка товаров в модель
@@ -32,13 +32,14 @@ interface IProductModel {
 	getItems(): IProductItem[];
 	// Получение товара по id
 	getProduct(id: cardId): IProductItem;
+	//Обновить Элементы
+	refreshItems(): void;
 }
 
 // Модель корзины
-interface IBasketModel {
-	items: Map<cardId, number>;
+export interface IBasketModel {
 	//Добавить товар в корзину
-	add(id: cardId): void;
+	add(items: ICard): void;
 	//Удалить товар из корзины
 	remove(id: cardId): void;
 	//Очистить всю корзину
@@ -47,10 +48,30 @@ interface IBasketModel {
 	getCountProducts(): number;
 	//Получить текущую общую сумму корзины
 	getTotal(): number;
+
+	getItems(): ICard[];
 }
 
+export interface IPurchasingGoods {
+	payment: string;
+	email: string;
+	phone: string;
+	address: string;
+	total: number;
+	items: cardId[];
+}
+
+export interface IResposePurchasingGoods {
+	id: cardId;
+	total: number;
+}
+
+export interface IFormState {
+	valid: boolean;
+	errors: string[];
+}
 //  Интерфейс способа оплаты с выбором оплаты
-interface IPayment {
+export interface IPayment {
 	// Тип оплаты
 	paymentType: paymentType[];
 	// выбронный тип оплаты
@@ -58,17 +79,27 @@ interface IPayment {
 }
 
 // Интерфейс для модели заказа
-interface IOrderModel {
-	// тип оплаты
-	payment: IPayment;
+export interface IOrderFormData {
+	payment: string;
 	// адрес
-	adress: string;
+	address: string;
+	// номер Телефона
+	phone: string;
+	// адресс электронной почты
+	email: string;
 	// очистить модель и снять выбор со способа оплаты
+}
+
+export interface IOrderModel {
+	getData(): IOrderFormData;
+
+	setDataField(field: keyof IOrderFormData, value: string): void;
+
 	clearAll(): void;
 }
 
 // Интерфейс для модели контактов
-interface IContactModel {
+export interface IContactModel {
 	// номер Телефона
 	phone: string;
 	// адресс электронной почты
@@ -78,10 +109,10 @@ interface IContactModel {
 }
 
 /* Интерйфейс для описания внутреннего состояние приложения 
-    и хранения моделий  
+	и хранения моделий  
 */
 
-interface IAppState {
+export interface IAppState {
 	productModel: IProductModel;
 
 	basketModel: IBasketModel;
@@ -98,65 +129,47 @@ interface IAppState {
 }
 
 // Интерфейс для страницы
-interface IPage {
+export interface IPage {
 	// Счетчик товаров в корзине
 	counter: HTMLElement;
 	// Список карточек товаров
 	store: HTMLElement[];
+	// //Отключаем прокрутку
+	// lockedScroll:boolean;
 }
 
 // Интерфейс для карточки товара
-interface ICard extends IProductItem {}
+export interface ICard extends IProductItem {
+	selected: boolean;
+}
 
 // Интерфейс окна корзины
-interface IBasket {
+export interface IBasket {
 	// Лист выбранных товаров в корзине
 	list: HTMLElement[];
 	// Общая сумма товаров в корзине
-	total: HTMLElement;
+	total: number;
 	//кнопка Оформления в корзине
 	button: HTMLButtonElement;
 }
 // Определение значений типов оплаты
-enum paymentType {
+export enum paymentType {
 	online = 'Онлайн',
 	offline = 'При получении',
 }
 
-//  Интерфейс окна заказа
-interface IOrder {
-	// Тип оплаты
-	payment: HTMLElement;
-	//адрес доставки
-	adress: HTMLElement;
-}
-
 //  Интерфейс окна контактов
-interface IContacts {
+export interface IContacts {
 	// номер Телефона
-	phone: HTMLElement;
+	phone: string;
 	// адресс электронной почты
-	email: HTMLElement;
+	email: string;
 }
 
-interface IApi {
-	// Базовый Url
-	baseUrl: string;
-
-	//Get запрос сервиса
-	get(uri: String): void;
-
-	//Post запрос  на сервис
-	post(uri: String, data: Object): void;
-
-	//Обработка ответа от сервиса в виде промиса с данными
-	response(response: Response): Promise<Partial<object>>;
-}
-
-type EventName = string | RegExp;
+export type EventName = string | RegExp;
 
 //Интерфейс для брокера событий
-interface IEvents {
+export interface IEvents {
 	//Установить обработчик на событие
 	on<T extends object>(event: EventName, callback: (data: T) => void): void;
 	//Инициировать событие с данными
@@ -165,7 +178,7 @@ interface IEvents {
 	off(eventName: EventName, callback: Function): void;
 }
 //Интерфейс для модального окна
-interface IModal {
+export interface IModal {
 	// Html элимент для модального окна
 	content: HTMLElement;
 	// открытие окна
@@ -173,6 +186,7 @@ interface IModal {
 	// закрытие окна
 	close(): void;
 	// обработка закрытия по кнопке Esc
-	handleEsc(): void;
-}
+	handleEsc(evt: Event): void;
 
+	render(data: IModal): HTMLElement;
+}

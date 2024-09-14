@@ -1,178 +1,424 @@
-// Абастрактный класс компонента
-abstract class Component<T> {
-	protected _element: HTMLElement;
-	// Конструктор принимает родительский элемент
-	protected constructor(protected readonly container: HTMLElement);
+import './scss/styles.scss';
 
-	// Добавить/убрать класс Переключить класс
-	protected toggleClass(className: string, force?: boolean): void;
+import { AuctionAPI } from './components/AuctionAPI';
+import { AppState } from './components/App';
 
-	// Установить текстовое содержимое
-	setText(text: string): void;
+import { Page } from './components/Page';
 
-	// Выделить/Снять выделение от значения state
-	setSelected(state: boolean): void;
+import { API_URL, CDN_URL } from './utils/constants';
 
-	// Видимый/невидимый  в зависимости от значения state
-	setVisible(state: boolean): void;
+import { StoreItem, StoreItemPreview } from './components/Card';
 
-	// Установить путь до изображения и альтернативный текст если есть
-	setImage(src: string, alt?: string): void;
+import { ensureElement, cloneTemplate } from './utils/utils';
+import { EventEmitter } from './components/base/events';
 
-	// Вернуть корневой DOM-элемент
-	render(data?: Partial<T>): HTMLElement;
-}
+import { Modal } from './components/Modal';
 
-// Класс заглавной страницы
-class Page extends Component<IPage> {
-	// Ссылки на внутренние элементы
-	protected _counter: HTMLElement;
-	protected _store: HTMLElement;
-	protected _basket: HTMLElement;
+import { Basket, StoreItemBasket } from './components/Basket';
+import { Order } from './components/Order';
 
-	// Конструктор принимает родительский элемент и обработчик событий
-	constructor(container: HTMLElement, protected events: IEvents);
+import {
+	ICard,
+	IOrderModel,
+	IOrderFormData,
+	IResposePurchasingGoods,
+} from './types';
 
-	// Сеттер для счётчика товаров в корзине
-	set counter(value: number);
+import { Contacts } from './components/Contacts';
 
-	// Сеттер для карточек товаров на странице
-	set store(items: HTMLElement[]);
-}
+import { Success } from './components/Success';
 
-class Card extends Component<ICard> {
-	// Ссылки на внутренние элементы карточки
-	protected _title: HTMLElement;
-	protected _image: HTMLImageElement;
-	protected _category: HTMLElement;
-	protected _price: HTMLElement;
-	protected _button: HTMLButtonElement;
+const events = new EventEmitter();
+const api = new AuctionAPI(CDN_URL, API_URL);
 
-	// Конструктор принимает имя блока, родительский контейнер
-	constructor(protected blockName: string, container: HTMLElement);
+// // Модель данных приложения
+// const appData = new AppState({}, events);
+const app = new AppState(events);
 
-	// Сеттер и геттер для уникального ID
-	set id(value: cardId);
-	get id(): cardId;
+// Все шаблоны
+const storeProductTemplate =
+	ensureElement<HTMLTemplateElement>('#card-catalog');
+const cardPreviewTemplate = ensureElement<HTMLTemplateElement>('#card-preview');
+const basketTemplate = ensureElement<HTMLTemplateElement>('#basket');
+const cardBasketTemplate = ensureElement<HTMLTemplateElement>('#card-basket');
+const orderTemplate = ensureElement<HTMLTemplateElement>('#order');
+const contactsTemplate = ensureElement<HTMLTemplateElement>('#contacts');
+const successTemplate = ensureElement<HTMLTemplateElement>('#success');
+const modalTemplate = ensureElement<HTMLElement>('#modal-container');
 
-	// Сеттер и гетер для названия
-	set title(value: string);
-	get title(): string;
+const modal = new Modal(modalTemplate, events);
 
-	// Сеттер для кратинки
-	set image(value: string);
+const page = new Page(document.body, events);
 
-	// Сеттер для определения выбрали товар или нет
-	set selected(value: boolean);
+const basket = new Basket('basket', cloneTemplate(basketTemplate), events);
 
-	// Сеттер для цены
-	set price(value: number | null);
+const order = new Order('order', cloneTemplate(orderTemplate), events);
 
-	// Сеттер для категории
-	set category(value: CategoryType);
-}
+const contacts = new Contacts(cloneTemplate(contactsTemplate), events);
 
-class Basket extends Component<IBasket> {
-	// Ссылки на внутренние элементы
-	protected _list: HTMLElement;
-	protected _total: HTMLElement;
+const success = new Success('order-success', cloneTemplate(successTemplate), {
+	onClick: () => {
+		modal.close();
+	},
+});
 
-	protected _button: HTMLButtonElement;
+api
+	.getProductist()
+	.then((result) => {
+		console.log(result);
+		app.productModel.setItems(result);
+	})
+	.catch((err) => {
+		console.error(err);
+	});
 
-	// Конструктор принимает имя блока, родительский элемент и обработчик событий кнопки
-	constructor(
-		protected blockName: string,
-		container: HTMLElement,
-		protected events: IEvents
-	);
+// Изменились элементы каталога
+events.on('items:changed', () => {
+	api.getProductist().then((list) => {
+		page.store = list.map((item) => {
+			const product = new StoreItem(cloneTemplate(storeProductTemplate), {
+				onClick: () => events.emit('card:select', item),
+			});
+			return product.render({
+				id: item.id,
+				title: item.title,
+				image: item.image,
+				category: item.category,
+				price: item.price,
+			});
+		});
+	});
+});
 
-	// Сеттер для общей цены товаров
-	set total(price: HTMLElement);
+// Открытие карточки
+events.on('card:select', (item: ICard) => {
+	//   page.locked = false;
+	const product = new StoreItemPreview(cloneTemplate(cardPreviewTemplate), {
+		onClick: () => {
+			events.emit('card:addBasket', item);
+		},
+	});
+	modal.render({
+		content: product.render({
+			id: item.id,
+			title: item.title,
+			image: item.image,
+			category: item.category,
+			description: item.description,
+			price: item.price,
+			selected: item.selected,
+		}),
+	});
+});
 
-	// Сеттер для списка товаров
-	set list(items: HTMLElement[]);
-}
+// Закрытие модального окна
+events.on('modal:open', () => {
+	page.locked = true;
+	document.addEventListener('keydown', modal.handleEsc.bind(modal));
+});
+events.on('modal:close', () => {
+	page.locked = false;
+	document.removeEventListener('keydown', modal.handleEsc.bind(modal));
+});
 
-// Абстрактный класс с добалением валидации и текста ошибок
-abstract class Form<T> extends Component<IFormState> {
-	protected _submit: HTMLButtonElement;
-	protected _errors: HTMLElement;
-	// Конструктор принимает  родительский элемент и обработчик событий кнопки
-	constructor(protected container: HTMLFormElement, protected events: IEvents);
+// Добавление товара в корзину
+events.on('card:addBasket', (item: ICard) => {
+	item.selected = true;
+	app.basketModel.add(item);
+	page.counter = app.basketModel.getCountProducts();
+	modal.close();
+});
 
-	// Вызов события изменения данных
-	protected onInputChange(field: keyof T, value: string);
+// Открытие корзины
+events.on('basket:open', () => {
+	page.locked = true;
+	const basketItems = app.basketModel.getItems().map((item, index) => {
+		const storeItem = new StoreItemBasket(
+			'card',
+			cloneTemplate(cardBasketTemplate),
+			{
+				onClick: () => events.emit('basket:del', item),
+			}
+		);
 
-	set valid(value: boolean);
+		return storeItem.render({
+			title: item.title,
+			price: item.price,
+			index: index + 1,
+		});
+	});
 
-	set errors(value: string);
-}
+	modal.render({
+		content: basket.render({
+			list: basketItems,
+			total: app.basketModel.getTotal(),
+		}),
+	});
+});
 
-// Класс  модального окна
-class FormModal extends Form<IModal> {
-	constructor(container: HTMLFormElement);
-	// открытие окна
-	open(): void;
-	// закрытие окна
-	close(): void;
-	// обработка закрытия по кнопке Esc
-	handleEsc(): void;
-}
-// Класс окна заказа
-class Order extends FormModal<IOrder> {
-	// Сссылки на внутренние элементы
-	protected _payment: HTMLButtonElement;
-	protected _adress: HTMLButtonElement;
+// Удаление из корзины
+events.on('basket:del', (item: ICard) => {
+	app.basketModel.remove(item.id);
+	// appData.deleteFromBasket(item.id);
+	item.selected = false;
+	basket.total = app.basketModel.getTotal(),
+	page.counter = app.basketModel.getCountProducts();
+	basket.refreshIndices();
+	if (app.basketModel.getCountProducts() === 0) {
+		basket.disableButton();
+		modal.close();
+	}
+});
 
-	// Конструктор принимает имя блока, родительский элемент и обработчик событий
-	constructor(
-		protected blockName: string,
-		container: HTMLFormElement,
-		protected events: IEvents
-	);
-}
+//   Открытие формы заказа
+events.on('basket:order', () => {
+	order.disableButtons();
+	app.orderModel.clearAll();
+	modal.render({
+		content: order.render({
+			valid: false,
+			errors: [],
+		}),
+	});
+});
 
-// Класс окна контаткной информации
-class Contacts extends FormModal<IContacts> {
-	// номер Телефона
-	protected _phone: HTMLElement;
-	// адресс электронной почты
-	protected _email: HTMLElement;
-	// Конструктор принимает родительский элемент и обработчик событий
-	constructor(container: HTMLFormElement, events: IEvents);
-}
+// Изменились введенные данные
+events.on(
+	'order:change',
+	(data: { field: keyof IOrderFormData; value: string }) => {
+		app.orderModel.setDataField(data.field, data.value);
+		let errors = [] as String[];
+		// const errors: typeof order.formErrors = {};
+		if (!app.orderModel.getData().address) {
+			errors.push('Необходимо указать адрес');
+		}
 
-// Класс апи для работсы с сервисом с асинхронными функциями
-class Api extends IApi {
-	// Базовый Url
-	baseUrl: string;
+		if (!app.orderModel.getData().payment) {
+			errors.push('Необходимо указать способ оплаты');
+		}
 
-	// Конструктор принимает базовый URL
-	constructor(baseUrl: string);
+		order.valid = !(errors.length > 0);
+		order.errors = errors.join('');
+	}
+);
 
-	//Get запрос сервиса
-	async get(uri: String): void;
+// Заполнить телефон и почту
+events.on('order:submit', () => {
+	modal.render({
+		content: contacts.render({
+			valid: false,
+			errors: [],
+		}),
+	});
+});
 
-	//Post запрос  на сервис
-	async post(uri: String, data: Object): void;
+events.on(
+	'contacts:change',
+	(data: { field: keyof IOrderFormData; value: string }) => {
+		app.orderModel.setDataField(data.field, data.value);
+		let errors = [] as String[];
+		// const errors: typeof order.formErrors = {};
+		if (!app.orderModel.getData().phone) {
+			errors.push('Необходимо указать телефон');
+		}
 
-	//Обработка ответа от сервиса в виде промиса с данными
-	protected async response(response: Response): Promise<Partial<object>>;
-}
+		if (!app.orderModel.getData().email) {
+			errors.push('Необходимо указать email');
+		}
 
-// Класс брокера задач
-class EventEmitter implements IEvents {
-	// Map состоящий из событий и подписчиков
-	_events: Map<EventName, Set<Function>>;
+		contacts.valid = !(errors.length > 0);
+		contacts.errors = errors.join('');
+	}
+);
 
-	constructor() {}
+// Покупка товаров
+events.on('contacts:submit', () => {
+	let payload = {
+		payment: app.orderModel.getData().payment,
+		email: app.orderModel.getData().email,
+		phone: app.orderModel.getData().phone,
+		address: app.orderModel.getData().address,
+		total: app.basketModel.getTotal(),
+		items: app.basketModel.getItems().map((el) => el.id),
+	};
 
-	//Установить обработчик на событие
-	on<T extends object>(eventName: EventName, callback: (event: T) => void) ;
+	api
+		.purchasingGoods(payload)
+		.then((res) => {
+			events.emit('order:success', res);
+			app.basketModel.clearAll();
+			app.productModel.getItems();
+			page.counter = app.basketModel.getCountProducts();
+			app.productModel.refreshItems();
+		})
+		.catch((err) => {
+			console.log(err);
+		});
+});
 
-	// Убирает колбэк с события
-	off(eventName: EventName, callback: Function) ;
+// Окно успешной покупки
+events.on('order:success', (res: IResposePurchasingGoods) => {
+	modal.render({
+		content: success.render({
+			description: res.total,
+		}),
+	});
+});
 
-	//Инициировать событие с данными
-	emit<T extends object>(eventName: string, data?: T) ;
-}
+// 'basket:order'
+
+//   order:change
+
+// // Класс заглавной страницы
+// class Page extends Component<IPage> {
+// 	// Ссылки на внутренние элементы
+// 	protected _counter: HTMLElement;
+// 	protected _store: HTMLElement;
+// 	protected _basket: HTMLElement;
+
+// 	// Конструктор принимает родительский элемент и обработчик событий
+// 	constructor(container: HTMLElement, protected events: IEvents);
+
+// 	// Сеттер для счётчика товаров в корзине
+// 	set counter(value: number);
+
+// 	// Сеттер для карточек товаров на странице
+// 	set store(items: HTMLElement[]);
+// }
+
+// class Card extends Component<ICard> {
+// 	// Ссылки на внутренние элементы карточки
+// 	protected _title: HTMLElement;
+// 	protected _image: HTMLImageElement;
+// 	protected _category: HTMLElement;
+// 	protected _price: HTMLElement;
+// 	protected _button: HTMLButtonElement;
+
+// 	// Конструктор принимает имя блока, родительский контейнер
+// 	constructor(protected blockName: string, container: HTMLElement);
+
+// 	// Сеттер и геттер для уникального ID
+// 	set id(value: cardId);
+// 	get id(): cardId;
+
+// 	// Сеттер и гетер для названия
+// 	set title(value: string);
+// 	get title(): string;
+
+// 	// Сеттер для кратинки
+// 	set image(value: string);
+
+// 	// Сеттер для определения выбрали товар или нет
+// 	set selected(value: boolean);
+
+// 	// Сеттер для цены
+// 	set price(value: number | null);
+
+// 	// Сеттер для категории
+// 	set category(value: CategoryType);
+// }
+
+// class Basket extends Component<IBasket> {
+// 	// Ссылки на внутренние элементы
+// 	protected _list: HTMLElement;
+// 	protected _total: HTMLElement;
+
+// 	protected _button: HTMLButtonElement;
+
+// 	// Конструктор принимает имя блока, родительский элемент и обработчик событий кнопки
+// 	constructor(
+// 		protected blockName: string,
+// 		container: HTMLElement,
+// 		protected events: IEvents
+// 	);
+
+// 	// Сеттер для общей цены товаров
+// 	set total(price: HTMLElement);
+
+// 	// Сеттер для списка товаров
+// 	set list(items: HTMLElement[]);
+// }
+
+// // Абстрактный класс с добалением валидации и текста ошибок
+// abstract class Form<T> extends Component<IFormState> {
+// 	protected _submit: HTMLButtonElement;
+// 	protected _errors: HTMLElement;
+// 	// Конструктор принимает  родительский элемент и обработчик событий кнопки
+// 	constructor(protected container: HTMLFormElement, protected events: IEvents);
+
+// 	// Вызов события изменения данных
+// 	protected onInputChange(field: keyof T, value: string);
+
+// 	set valid(value: boolean);
+
+// 	set errors(value: string);
+// }
+
+// // Класс  модального окна
+// class FormModal extends Form<IModal> {
+// 	constructor(container: HTMLFormElement);
+// 	// открытие окна
+// 	open(): void;
+// 	// закрытие окна
+// 	close(): void;
+// 	// обработка закрытия по кнопке Esc
+// 	handleEsc(): void;
+// }
+// // Класс окна заказа
+// class Order extends FormModal<IOrder> {
+// 	// Сссылки на внутренние элементы
+// 	protected _payment: HTMLButtonElement;
+// 	protected _adress: HTMLButtonElement;
+
+// 	// Конструктор принимает имя блока, родительский элемент и обработчик событий
+// 	constructor(
+// 		protected blockName: string,
+// 		container: HTMLFormElement,
+// 		protected events: IEvents
+// 	);
+// }
+
+// // Класс окна контаткной информации
+// class Contacts extends FormModal<IContacts> {
+// 	// номер Телефона
+// 	protected _phone: HTMLElement;
+// 	// адресс электронной почты
+// 	protected _email: HTMLElement;
+// 	// Конструктор принимает родительский элемент и обработчик событий
+// 	constructor(container: HTMLFormElement, events: IEvents);
+// }
+
+// // Класс апи для работсы с сервисом с асинхронными функциями
+// class Api extends IApi {
+// 	// Базовый Url
+// 	baseUrl: string;
+
+// 	// Конструктор принимает базовый URL
+// 	constructor(baseUrl: string);
+
+// 	//Get запрос сервиса
+// 	async get(uri: String): void;
+
+// 	//Post запрос  на сервис
+// 	async post(uri: String, data: Object): void;
+
+// 	//Обработка ответа от сервиса в виде промиса с данными
+// 	protected async response(response: Response): Promise<Partial<object>>;
+// }
+
+// // Класс брокера задач
+// class EventEmitter implements IEvents {
+// 	// Map состоящий из событий и подписчиков
+// 	_events: Map<EventName, Set<Function>>;
+
+// 	constructor() {}
+
+// 	//Установить обработчик на событие
+// 	on<T extends object>(eventName: EventName, callback: (event: T) => void) ;
+
+// 	// Убирает колбэк с события
+// 	off(eventName: EventName, callback: Function) ;
+
+// 	//Инициировать событие с данными
+// 	emit<T extends object>(eventName: string, data?: T) ;
+// }
