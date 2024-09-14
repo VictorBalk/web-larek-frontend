@@ -62,12 +62,12 @@ type cardId = string;
 ### Тип котегории для раскраски
 
 ```sh
-enum categoryType {
-    category1 = 'софт-скил',
-    category2 = 'другое',
-    category3 = 'дополнительное',
-    category4 = 'кнопка',
-    category5 = 'хард-скилл',
+export enum categoryType {
+	soft = 'софт-скил' as any,
+	other = 'другое' as any,
+	additional = 'дополнительное' as any,
+	button = 'кнопка' as any,
+	hard = 'хард-скилл' as any,
 }
 ```
 
@@ -105,14 +105,16 @@ interface IProductItem {
 
 ```sh
 interface IProductModel {
-    // Товары с сервиса
-    items: IProductItem[];
-    // Установка товаров в модель
-    setItems(items: IProductItem[]): void;
-    // Получение модели товаров
-    getItems(): IProductItem[];
-    // Получение товара по id
-    getProduct(id: cardId): IProductItem;
+	// Товары с сервиса
+	items: IProductItem[];
+	// Установка товаров в модель
+	setItems(items: IProductItem[]): void;
+	// Получение модели товаров
+	getItems(): IProductItem[];
+	// Получение товара по id
+	getProduct(id: cardId): IProductItem;
+	// Обновить Элементы
+	refreshItems(): void;
 }
 ```
 
@@ -120,17 +122,30 @@ interface IProductModel {
 
 ```sh
 interface IBasketModel {
-    items: Map<cardId, number>;
-    //Добавить товар в корзину
-    add(id: cardId): void;
-    //Удалить товар из корзины
-    remove(id: cardId): void;
-    //Очистить всю корзину
-    clearAll(): void;
-    //Получить текущее количсетво товаров в корзине
-    getCountProducts(): number;
-    //Получить текущую общую сумму корзины
-    getTotal(): number;
+	//Добавить товар в корзину
+	add(items: ICard): void;
+	//Удалить товар из корзины
+	remove(id: cardId): void;
+	//Очистить всю корзину
+	clearAll(): void;
+	//Получить текущее количсетво товаров в корзине
+	getCountProducts(): number;
+	//Получить текущую общую сумму корзины
+	getTotal(): number;
+	getItems(): ICard[];
+}
+```
+
+### Интефейс с полями для покупок
+
+```sh
+ interface IPurchasingGoods {
+	payment: string;
+	email: string;
+	phone: string;
+	address: string;
+	total: number;
+	items: cardId[];
 }
 ```
 
@@ -177,19 +192,16 @@ interface IContactModel {
 
 ```sh
 interface IAppState {
-    productModel: IProductModel;
-
-    basketModel: IBasketModel;
-
-    contactModel: IContactModel;
-
-    orderModel: IOrderModel;
-
-    //Модальное окно активное в данный момент
-    modalOpened: HTMLElement;
-
-    // Состояние приложения ( технический статус состояния приложения например для разграничения до и посли загрузки товаров )
-    stateApp: string;
+// Интерйфейс хранения моделий
+ interface IAppState {
+	// Модель с товарами
+	productModel: IProductModel;
+	// Модель карзины с товрами
+	basketModel: IBasketModel;
+	// Модель с информацией по заказу
+	orderModel: IOrderModel;
+	// Состояние приложения ( технический статус состояния приложения например для разграничения до и посли загрузки товаров )
+	stateApp: string;
 }
 ```
 
@@ -278,14 +290,16 @@ interface IEvents {
 
 ```sh
 interface IModal {
-    // Html элимент для модального окна
-    content: HTMLElement;
-    // открытие окна
-    open(): void;
-    // закрытие окна
-    close(): void;
-    // обработка закрытия по кнопке Esc
-    handleEsc(): void;
+	// Html элимент для модального окна
+	content: HTMLElement;
+	// открытие окна
+	open(): void;
+	// закрытие окна
+	close(): void;
+	// обработка закрытия по кнопке Esc
+	handleEsc(evt: Event): void;
+	// Отрисовка окна
+	render(data: IModal): HTMLElement;
 }
 ```
 
