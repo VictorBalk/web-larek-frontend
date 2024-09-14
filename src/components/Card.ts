@@ -37,7 +37,7 @@ export class Card extends Component<ICard> {
 		}
 	}
 
-	// Сеттер и геттер для уникального ID
+	// Сеттер и геттер для id
 	set id(value: string) {
 		this.container.dataset.id = value;
 	}

@@ -1,12 +1,5 @@
 import { Component } from './base/Components';
-
-interface ISuccessActions {
-	onClick: (event: MouseEvent) => void;
-}
-
-export interface ISuccess {
-	description: number;
-}
+import { ISuccess, ISuccessActions } from '../types';
 
 export class Success extends Component<ISuccess> {
 	protected _button: HTMLButtonElement;

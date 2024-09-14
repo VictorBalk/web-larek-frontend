@@ -1,27 +1,26 @@
-import { IAppState, IProductModel, IBasketModel, IContactModel, IOrderModel } from "../types";
-import { IEvents } from "./base/events";
-import { productModel, basketModel,orderModel } from "./base/Model"
+import {
+	IAppState,
+	IProductModel,
+	IBasketModel,
+	IContactModel,
+	IOrderModel,
+} from '../types';
+import { IEvents } from './base/events';
+import { productModel, basketModel, orderModel } from './Model';
 export class AppState implements IAppState {
+	constructor(protected events: IEvents) {
+		this.productModel = new productModel(events);
+		this.basketModel = new basketModel(events);
+		this.orderModel = new orderModel(events);
+		this.stateApp = 'init';
+	}
 
-    constructor(protected events: IEvents) {
-        this.productModel = new productModel(events);
-        this.basketModel = new basketModel(events);
-        this.orderModel = new orderModel(events);
-        this.stateApp = 'init'
-    }
+	productModel: IProductModel;
 
-    productModel: IProductModel;
+	basketModel: IBasketModel;
 
-    basketModel: IBasketModel;
+	orderModel: IOrderModel;
 
-    contactModel: IContactModel;
-
-    orderModel: IOrderModel;
-
-    //Модальное окно активное в данный момент
-    modalOpened: HTMLElement;
-
-    // Состояние приложения ( технический статус состояния приложения например для разграничения до и посли загрузки товаров )
-    stateApp: string;
-
+	// Состояние приложения ( технический статус состояния приложения например для разграничения до и посли загрузки товаров )
+	stateApp: string;
 }

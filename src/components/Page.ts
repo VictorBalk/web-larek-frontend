@@ -29,19 +29,20 @@ export class Page extends Component<IPage> {
 		this._counter.textContent = String(value);
 	}
 
-	// Сеттер для карточек товаров на странице
-	set store(items: HTMLElement[]) {
-		this._store.replaceChildren(...items);
-	}
-
-	// Сеттер для блока прокрутки
+	// Сеттер для блокировки прокрутки 
 	set locked(value: boolean) {
 		if (value) {
+            //Состояние прокурутки до открытия модального окна
 			this._lastScroll = window.scrollY;
 			this._wrapper.classList.add('page__wrapper_locked');
 		} else {
 			this._wrapper.classList.remove('page__wrapper_locked');
 			window.scrollTo(0, this._lastScroll);
 		}
+	}
+
+	// Сеттер для карточек товаров на странице
+	set store(items: HTMLElement[]) {
+		this._store.replaceChildren(...items);
 	}
 }

@@ -1,8 +1,6 @@
 import { IEvents } from './base/events';
 import { Form } from './base/form';
 import { IContacts } from '../types';
-import { ensureElement } from '../utils/utils';
-
 /*
  * Класс, описывающий окошко контакты
  * */

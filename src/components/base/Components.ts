@@ -1,4 +1,3 @@
-import { IEvents } from './events';
 // Абастрактный класс компонента
 export abstract class Component<T> {
 	protected _element: HTMLElement;
@@ -21,9 +20,23 @@ export abstract class Component<T> {
 	// Выделить/Снять выделение от значения state
 	setSelected(state: boolean): void {}
 
-	// Видимый/невидимый  в зависимости от значения state
-	setVisible(state: boolean): void {}
+	// Сменить статус блокировки
+	setDisabled(element: HTMLElement, state: boolean) {
+		if (element) {
+			if (state) element.setAttribute('disabled', 'disabled');
+			else element.removeAttribute('disabled');
+		}
+	}
 
+	// Скрыть
+	protected setHidden(element: HTMLElement) {
+		element.style.display = 'none';
+	}
+
+	// Показать
+	protected setVisible(element: HTMLElement) {
+		element.style.removeProperty('display');
+	}
 	// Установить путь до изображения и альтернативный текст если есть
 	setImage(src: string, alt?: string): void {}
 

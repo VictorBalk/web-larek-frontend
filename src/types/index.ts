@@ -1,4 +1,4 @@
-// import './scss/styles.scss';
+import '../scss/styles.scss';
 
 // Тип уникального Id карточки
 export type cardId = string;
@@ -52,6 +52,7 @@ export interface IBasketModel {
 	getItems(): ICard[];
 }
 
+// Интефейс с полями для покупок
 export interface IPurchasingGoods {
 	payment: string;
 	email: string;
@@ -61,11 +62,13 @@ export interface IPurchasingGoods {
 	items: cardId[];
 }
 
+// Интефейс при успшной покупке
 export interface IResposePurchasingGoods {
 	id: cardId;
 	total: number;
 }
 
+// Интефейс с состояние формы 
 export interface IFormState {
 	valid: boolean;
 	errors: string[];
@@ -108,22 +111,15 @@ export interface IContactModel {
 	clearAll(): void;
 }
 
-/* Интерйфейс для описания внутреннего состояние приложения 
-	и хранения моделий  
-*/
-
+ 
+// Интерйфейс хранения моделий  
 export interface IAppState {
+	//Модель с товарами
 	productModel: IProductModel;
-
+	//Модель карзины с товрами
 	basketModel: IBasketModel;
-
-	contactModel: IContactModel;
-
+	//Модель с информацией по заказу
 	orderModel: IOrderModel;
-
-	//Модальное окно активное в данный момент
-	modalOpened: HTMLElement;
-
 	// Состояние приложения ( технический статус состояния приложения например для разграничения до и посли загрузки товаров )
 	stateApp: string;
 }
@@ -134,8 +130,6 @@ export interface IPage {
 	counter: HTMLElement;
 	// Список карточек товаров
 	store: HTMLElement[];
-	// //Отключаем прокрутку
-	// lockedScroll:boolean;
 }
 
 // Интерфейс для карточки товара
@@ -156,6 +150,15 @@ export interface IBasket {
 export enum paymentType {
 	online = 'Онлайн',
 	offline = 'При получении',
+}
+
+//Интерфейс c событием на экране успешнйо покупки
+export interface ISuccessActions {
+	onClick: (event: MouseEvent) => void;
+}
+// Интерфейс для Окна с успешной покупкой
+export interface ISuccess {
+	description: number;
 }
 
 //  Интерфейс окна контактов
@@ -187,6 +190,6 @@ export interface IModal {
 	close(): void;
 	// обработка закрытия по кнопке Esc
 	handleEsc(evt: Event): void;
-
+	//Отрисовка окна
 	render(data: IModal): HTMLElement;
 }

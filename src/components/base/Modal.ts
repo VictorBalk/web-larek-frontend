@@ -1,7 +1,7 @@
-import { IModal } from '../types';
-import { Component } from './base/Components';
-import { ensureElement } from '../utils/utils';
-import { IEvents } from './base/events';
+import { IModal } from '../../types';
+import { Component } from './Components';
+import { ensureElement } from '../../utils/utils';
+import { IEvents } from './events';
 
 interface IModalData {
 	content: HTMLElement;

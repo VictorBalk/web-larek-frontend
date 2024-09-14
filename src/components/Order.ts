@@ -7,18 +7,16 @@ export class Order extends Form<IOrderFormData> {
 	// Сссылки на внутренние элементы
 	protected _card: HTMLButtonElement;
 	protected _cash: HTMLButtonElement;
-	protected _address: HTMLInputElement;
 	// Конструктор принимает имя блока, родительский элемент и обработчик событий
 	constructor(
 		protected blockName: string,
-		container: HTMLFormElement,
+        container: HTMLFormElement,
 		protected events: IEvents
 	) {
 		super(container, events);
-
+        //Кнопки оплаты
 		this._card = container.elements.namedItem('card') as HTMLButtonElement;
 		this._cash = container.elements.namedItem('cash') as HTMLButtonElement;
-		this._address = container.elements.namedItem('address') as HTMLInputElement;
 
 		if (this._cash) {
 			this._cash.addEventListener('click', () => {
@@ -37,11 +35,7 @@ export class Order extends Form<IOrderFormData> {
 		}
 	}
 
-	set address(value: string) {
-		this.setValue(this._address, value);
-	}
-
-	// Метод, отключающий подсвечивание кнопок
+	//Сбрасываем кнопки
 	disableButtons() {
 		this._cash.classList.remove('button_alt-active');
 		this._card.classList.remove('button_alt-active');
